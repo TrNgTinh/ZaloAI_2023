@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+*.ipynb
+*LayoutDETR/*.git
+
+SD/checkpoint/
+
+Translate_Vi2En/checkpoint/
