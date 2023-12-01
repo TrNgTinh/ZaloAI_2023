@@ -13,3 +13,4 @@ PosterLayout-CVPR2023
 SD_Thang/checkpoint/
 Output/
 Notebook
+__pycache__
