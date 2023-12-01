@@ -5,11 +5,11 @@
 SD/checkpoint/
 
 Translate_Vi2En/checkpoint/
-
+results/
 result_temp
 submit
 PosterLayout-CVPR2023
-
+results/
 SD_Thang/checkpoint/
 Output/
 Notebook
