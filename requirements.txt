@@ -6,3 +6,8 @@ timm==0.9.7
 torch
 torchvision
 tqdm
+pandas
+transformers
+scikit-learn
+sentencepiece
+protobuf
