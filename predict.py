@@ -1,7 +1,12 @@
 from translate_info import build_faiss_index, embed_single_value, relatedness_fn, TranslatorProcessor
 import pandas as pd
+from pathlib import Path
+import sys
 
-from generate_bg import BackgroundProcessor
+current_path = Path(__file__).resolve().parent
+SD_path = current_path / 'SD_Thang'
+sys.path.append(str(SD_path))
+from SD_Thang.sd import BackgroundGenerator
 
 def predict(row):
     pass
@@ -13,7 +18,8 @@ cate_file = '/data/tinhtn/Banner/Zalo/Data/test/loc.txt'
 
 
 translator_processor = TranslatorProcessor(input_csv_file, cate_file)
-bg = BackgroundProcessor(output_directory="Output/out_bg/")
+bg = BackgroundGenerator()
+
 
 df = pd.read_csv(input_csv_file)
 
