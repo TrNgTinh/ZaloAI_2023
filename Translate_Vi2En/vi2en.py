@@ -2,7 +2,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 class TranslatorModule:
-    def __init__(self, device = "cuda:1", model_name="vinai/vinai-translate-vi2en-v2", cache_dir = './Translate_Vi2En/checkpoint'):
+    def __init__(self, device = "cuda:1", model_name="vinai/vinai-translate-vi2en-v2", cache_dir = 'cache'):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, src_lang="vi_VN", cache_dir = cache_dir)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name, cache_dir = cache_dir)
         self.device = device

@@ -4,7 +4,6 @@ import time
 from transformers import AutoModel, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import faiss
 
@@ -102,10 +101,10 @@ def search_faiss_index_gpu(faiss_index, query_embedding, k=1):
 
 
 class TranslatorProcessor:
-    def __init__(self, input_csv_file, categorical_file, device="cuda:0"):
+    def __init__(self, input_csv_file, categorical_file, device="cuda:0", cache_dir = "cache"):
         self.translator = TranslatorModule(device=device)
-        self.phobert = AutoModel.from_pretrained("vinai/phobert-base-v2").to(device)
-        self.tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base-v2")
+        self.phobert = AutoModel.from_pretrained("vinai/phobert-base-v2", cache_dir = cache_dir).to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base-v2", cache_dir = cache_dir)
         self.df = pd.read_csv(input_csv_file)
         self.df_cate = pd.read_csv(categorical_file, delimiter='\t', quoting=3)  # quoting=3 means QUOTE_NONE, which disables quoting
         self.df_cate = self.df_cate[~self.df_cate.duplicated(subset='loc')]
