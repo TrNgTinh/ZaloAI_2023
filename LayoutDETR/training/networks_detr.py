@@ -14,6 +14,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from transformers import BertTokenizer
+
 from training.util import TransformerWithToken_layoutganpp
 
 from training.blip import init_tokenizer
@@ -25,6 +27,7 @@ from training.detr_position_encoding import PositionEmbeddingSine
 from training.detr_backbone import Backbone, Joiner
 from training.detr_transformer import Transformer, TransformerWithToken, TransformerDecoderLayer, TransformerDecoder
 
+import transformers
 def merge_lists(lists):
     ret = []
     for l in lists:
@@ -83,8 +86,8 @@ class Generator(nn.Module):
 
         self.fc_z = nn.Linear(z_dim*9, bert_f_dim)
         self.emb_label = nn.Embedding(num_bbox_labels, bert_f_dim)
-
-        self.tokenizer = init_tokenizer()   
+        
+        self.tokenizer = init_tokenizer()
         encoder_config = BertConfig.from_json_file(med_config)
         encoder_config.encoder_width = bert_f_dim
         encoder_config.num_hidden_layers = bert_num_encoder_layers
@@ -141,8 +144,12 @@ class Generator(nn.Module):
         z0 = normalize_2nd_moment(z.view(B, -1))
         z = self.fc_z(z0).unsqueeze(1).expand(-1, N, -1)
         l = self.emb_label(bbox_class)
-        #aspect_ratio = (bbox_real[:,:,3] / bbox_real[:,:,2]).nan_to_num().unsqueeze(-1)
+        #aspect_ratio = (bbox_real[:,:,3] / bbox_real[:,:,2]).nan_to_num().unsqueeze(-1)  
+        #text =  self.tokenizer(merge_lists(bbox_text), max_length=self.max_text_length, return_tensors="pt").to(bbox_class.device)
+        
         text = self.tokenizer(merge_lists(bbox_text), padding='max_length', truncation=True, max_length=self.max_text_length, return_tensors="pt").to(bbox_class.device)
+
+        
         text_output = self.text_encoder(text.input_ids, attention_mask=text.attention_mask, return_dict=True, mode='text')
         text_feat = text_output.last_hidden_state[:,0,:].view(B, N, -1)
         #text_len = torch.from_numpy(np.array([float(len(t))/40.0 for t in merge_lists(bbox_text)])).to(bbox_class.device).to(torch.float32).view(B, N, 1)

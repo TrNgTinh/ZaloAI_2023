@@ -1,10 +1,11 @@
 from PIL import Image, ImageDraw, ImageFont
 import torch
 from pathlib import Path
+import pandas as pd
+from tqdm import tqdm
+from transformers import BertTokenizer
 import sys
 import time
-from tqdm import tqdm
-import pandas as pd
 
 current_path = Path(__file__).resolve().parent
 LayoutDETR_path = current_path / 'LayoutDETR'
@@ -13,38 +14,33 @@ from LayoutDETR.generate import generate_images
 import legacy
 import dnnlib
 
-start_time = time.time() 
+class AddTextProcessor:
+    def __init__(self, output_directory, network_pkl = str(LayoutDETR_path / "checkpoints/layoutdetr_ad_banner.pkl")):
+        self.network_pkl = network_pkl
+        self.result_path = output_directory
+        self.G = self.load_network()
 
-network_pkl = str(LayoutDETR_path / "checkpoints/layoutdetr_ad_banner.pkl")
-print('Loading networks from "%s"...' % network_pkl)
-device = torch.device('cuda')
-with dnnlib.util.open_url(network_pkl) as f:
-    G = legacy.load_network_pkl(f)['G_ema'].to(device) # type: ignore
+    def load_network(self):
+        with dnnlib.util.open_url(self.network_pkl) as f:
+            G = legacy.load_network_pkl(f)['G_ema'].to(torch.device('cuda'))
+        G.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        G.tokenizer.add_special_tokens({'bos_token':'[DEC]'})
+        G.tokenizer.add_special_tokens({'additional_special_tokens':['[ENC]']})       
+        G.tokenizer.enc_token_id = G.tokenizer.additional_special_tokens_ids[0]  
+        return G
 
-print(G)
-print("type", type(G))
+    def process_row(self, row, bg_path):
+        bg_path = Path(bg_path) / f"{row['bannerImage']}"
+        description_str = str(row['description']) if not pd.isna(row['description']) else ''
+        more_info_str = str(row['moreInfo']) if not pd.isna(row['moreInfo']) else ''
+        strings = description_str + '|' + more_info_str
 
-csv_file = '/home/tinhtn/tinhtn/Banner/Zalo/Data/test/info.csv'
-bg_path = Path('/home/tinhtn/tinhtn/Banner/Zalo/Data/test/images/')
-data = pd.read_csv(csv_file)
-
-for index, row in tqdm(data.iterrows(), total=len(data), desc="Processing Data"):
-
-    bg = bg_path / f"{row['bannerImage']}"
-    
-    description_str = str(row['description']) if not pd.isna(row['description']) else ''
-    more_info_str = str(row['moreInfo']) if not pd.isna(row['moreInfo']) else ''
-    strings = description_str + '|' + more_info_str
-
-    string_labels='body text|button'
-    outfile= str(current_path / f"result_temp/images/{row['id']}")
-    bg_preprocessing = 256
-    out_jittering_strength = 0.0
-    out_postprocessing = "horizontal_left_aligned"
-    generate_images(network_pkl, bg, bg_preprocessing, strings, string_labels, outfile, out_jittering_strength, out_postprocessing, G)
-
-end_time = time.time()
-print("Time:", end_time - start_time)
+        string_labels = 'body text|button'
+        #outfile = str(self.result_path / f"images/{row['id']}")
+        outfile = bg_path
+        bg_preprocessing = 256
+        out_jittering_strength = 0.0
+        out_postprocessing = "horizontal_left_aligned"
+        generate_images(self.network_pkl, bg_path, bg_preprocessing, strings, string_labels, outfile, out_jittering_strength, out_postprocessing, self.G)
 
 
-    

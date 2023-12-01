@@ -544,7 +544,7 @@ def visualize_banner(boxes, masks, styles, is_center, background_img, output_for
             draw.text((x1, y1), text.upper(), font=font, fill=font_color)
 
     # Save the generated image
-    generated_image_path_vis = generated_file_path + '.jpg'
+    generated_image_path_vis = generated_file_path
     img_draw.save(generated_image_path_vis)
 
     return generated_image_path_vis, None  # No HTML output in this case

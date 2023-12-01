@@ -16,4 +16,5 @@ Notebook
 __pycache__
 cache
 cache/
+images/
 */__pycache__/*
