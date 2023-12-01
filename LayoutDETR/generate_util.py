@@ -549,3 +549,102 @@ def visualize_banner(boxes, masks, styles, is_center, background_img, output_for
 
     return generated_image_path_vis, None  # No HTML output in this case
 
+
+
+def visualize_banner(boxes, masks, styles, is_center, background_img, browser, output_format, generated_file_path):
+    soup = BeautifulSoup(HTML_TEMP, "html.parser")
+    # insert img src div
+    img = soup.findAll('img')
+    img[0]['src'] = os.path.basename(generated_file_path + '.png')
+    background_img.save(generated_file_path + '.png')
+
+    W_page, H_page = background_img.size
+    w_page, h_page = W_page, H_page  # thumbnail resolution
+    boxes = boxes[masks]
+    for i in range(boxes.shape[0]):
+        text = styles[i]['text']
+        if not text:
+            continue
+        
+        x1, y1, x2, y2 = convert_xywh_to_ltrb(boxes[i])
+        x1, x2 = max(0, int(x1 * W_page)), min(W_page - 1, int(x2 * W_page))
+        y1, y2 = max(0, int(y1 * H_page)), min(H_page - 1, int(y2 * H_page))
+        h_tbox, w_tbox = int(y2 - y1 + 1), int(x2 - x1 + 1)
+        font_color = styles[i]['style']['color']
+        font_family = styles[i]['style']['fontFamily']
+        font_family = 'font-family:' + font_family + ';' if 'fontFamily' in styles[i]['style'] and \
+                                                            styles[i]['style']['fontFamily'] else 'font-family:Arial;'
+        if font_color:
+            font_color = 'color:' + font_color + ';'
+        else:
+            if styles[i]['type'] == 'button':
+                font_color = 'color:' + get_adaptive_font_button_color(background_img.crop([x1, y1, x2, y2]))[0] + ';'
+            else:
+                font_color = 'color:' + get_adaptive_font_color(background_img.crop([x1, y1, x2, y2])) + ';'
+
+        font_size, text_width = get_adaptive_font_size2(w_tbox, h_tbox, H_page, text, styles[i]['type'])
+
+        # button resize and alignment
+        if styles[i]['type'] == 'button':
+            r_mar = 1.3
+            font_size_int = int(font_size)
+            mar = font_size_int/2*r_mar
+            y_mid = (y1 + y2)/2
+            if is_center:
+                x_mid = (x1 + x2)/2
+                y1 = max(0, y_mid - mar - 1)
+                y2 = min(H_page - 1, y_mid + mar)
+                x1 = max(0, x_mid - text_width/2 - mar - 1)
+                x2 = min(W_page - 1, x_mid + text_width/2 + mar)
+            else:
+                y1 = max(0, y_mid - mar - 1)
+                y2 = min(H_page - 1, y_mid + mar)
+                x2 = min(W_page - 1, x1 + text_width + mar * 2)
+            h_tbox, w_tbox = int(y2 - y1 + 1), int(x2 - x1 + 1)
+
+        font_size = 'font-size:' + font_size + 'px;'
+        tbox_id = 'id="' + styles[i]['type'] + '";'
+
+        if styles[i]['type'] == 'button' or is_center:
+            tbox_style = TEXT_CSS_TEMP + 'text-align:center;justify-content:center;'
+        else:
+            tbox_style = TEXT_CSS_TEMP + 'text-align:left;'
+
+        tbox_style = tbox_style + font_color + font_size + font_family + tbox_id
+        tbox_style += 'width:' + str(w_tbox) + 'px;max-width:' + str(w_tbox) + 'px;'
+        tbox_style += 'height:' + str(h_tbox) + 'px;max-height:' + str(h_tbox) + 'px;'
+        tbox_style += 'top:' + str(y1) + 'px;'
+        tbox_style += 'left:' + str(x1) + 'px;'
+        if styles[i]['type'].lower() == 'button':
+            if styles[i]['buttonParams']['backgroundColor']:
+                tbox_style += 'background-color:' + styles[i]['buttonParams']['backgroundColor'] + ';'
+            else:
+                tbox_style += 'background-color:' + get_adaptive_font_button_color(background_img.crop([x1, y1, x2, y2]))[1] + ';'
+
+            if styles[i]['buttonParams']['radius']:
+                tbox_style += 'border-radius:' + str(styles[i]['buttonParams']['radius']).strip() + 'em;'
+
+        tbox_attr = {'style': tbox_style}
+        new_div = soup.new_tag("div", **tbox_attr)
+        new_div.string = text
+        soup.html.body.div.append(new_div)
+
+    soup.prettify()
+    generated_image_path_vis = generated_html_path = ''
+    if 'image' in output_format:
+        generated_image_path_vis = generated_file_path
+        with open(generated_file_path + '.html', "w") as f:
+            f.write(str(soup))
+        try:
+            browser.get("file:///" + generated_file_path + '.html')
+        except Exception as e:
+            pass
+        png = browser.get_screenshot_as_png()
+        screenshot = Image.open(BytesIO(png))
+        screenshot = screenshot.crop([0, 0, W_page, H_page])
+        if W_page > w_page or H_page > h_page:
+            screenshot.thumbnail((w_page, h_page), Image.ANTIALIAS)
+        screenshot.save(generated_image_path_vis)
+    
+    return generated_image_path_vis, generated_html_path
+

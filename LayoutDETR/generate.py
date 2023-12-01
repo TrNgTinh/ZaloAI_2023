@@ -28,7 +28,7 @@ from metrics.metric_layoutnet import compute_overlap, compute_alignment
 from util import convert_xywh_to_ltrb
 from generate_util import visualize_banner
 from selenium import webdriver
-#from selenium.webdriver import Chrome
+from selenium.webdriver import Chrome
 import random
 import uuid
 import pdb
@@ -255,6 +255,15 @@ def generate_images(
     out_postprocessing: str,
     G,
 ):
+
+    # initialize Chrome based web driver for html screenshot
+    options = webdriver.ChromeOptions()
+    options.add_argument('no-sandbox')
+    options.add_argument('headless')
+    browser = Chrome(executable_path='/usr/bin/chromedriver', options=options)
+    # make sure browser window size has enough resolution for the largest background image
+    browser.set_window_size(4096, 4096)
+    
     # initialize Chrome based web driver for html screenshot
     temp = json.dumps(json_temp)
     banner_specs = json.loads(temp)
@@ -372,8 +381,12 @@ def generate_images(
         if e['type'] == 'button':
             e['buttonParams']['radius'] = 0.5
     
+    #visualize_banner(bbox_fake, mask, banner_specs['contentStyle']['elements'],
+    #                bbox_alignment, background_orig, banner_specs["resultFormat"],
+    #                outfile)
+
     visualize_banner(bbox_fake, mask, banner_specs['contentStyle']['elements'],
-                    bbox_alignment, background_orig, banner_specs["resultFormat"],
+                    bbox_alignment, background_orig, browser, banner_specs["resultFormat"],
                     outfile)
     #save_bboxes_with_background(bbox_fake, mask, bbox_class, background_orig, outfile+'_bboxes.png')
 
