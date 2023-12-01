@@ -110,21 +110,31 @@ class TranslatorProcessor:
         self.df_cate = self.df_cate[~self.df_cate.duplicated(subset='loc')]
         self.df_cate = create_embedding_column(self.df_cate, "loc", "loc_emb", self.phobert, self.tokenizer)
         self.index_build = build_faiss_index(self.df_cate, "loc_emb")
+        self.medi = embed_single_value("Sản phẩm không phải thuốc không có tác dụng thay thế thuốc chữa bệnh", self.phobert, self.tokenizer)
         
     def categorical_row(self, row, categorical_file, out_csv_file, col_emb = 'caption', col_translate = 'caption'):
         #Categorical
         #Raw Df
         item = row[col_emb]
         emb = embed_single_value(item, self.phobert, self.tokenizer)
-
         cosinsimilarity, index = relatedness_fn(self.index_build, emb)  
 
-        classes = self.translator.translate_vi2en(self.df_cate.iloc[index[0]]['loc'])
-        
+        classes = self.df_cate.iloc[index[0]]['loc']  
         row['score'] = cosinsimilarity[0]
-        row['Categorical'] = classes[0]
+        row['Categorical'] = classes
 
+        if cosinsimilarity > 0.8:
+            row['caption'] = classes + " " + row['caption']
+            
         row = self.translate_row(row, col_translate)
+        #Thuoc
+        medicine_val = embed_single_value(row["moreInfo"], self.phobert, self.tokenizer)
+        
+        simlar = cosine_similarity(self.medi, medicine_val)[0][0]
+
+        if(simlar>0.85):
+            row['caption_en'] = "Medicine box about " + row['caption_en']
+            
         
         return row
            
