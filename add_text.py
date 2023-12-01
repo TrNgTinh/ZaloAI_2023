@@ -24,6 +24,9 @@ class AddTextProcessor:
         with dnnlib.util.open_url(self.network_pkl) as f:
             G = legacy.load_network_pkl(f)['G_ema'].to(torch.device('cuda'))
         G.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        G.tokenizer.add_special_tokens({'bos_token':'[DEC]'})
+        G.tokenizer.add_special_tokens({'additional_special_tokens':['[ENC]']})       
+        G.tokenizer.enc_token_id = G.tokenizer.additional_special_tokens_ids[0]  
         return G
 
     def process_row(self, row, bg_path):

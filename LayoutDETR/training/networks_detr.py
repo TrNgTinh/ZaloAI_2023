@@ -39,7 +39,7 @@ def split_list(list_a, chunk_size):
     for i in range(0, len(list_a), chunk_size):
         ret.append(list_a[i:i+chunk_size])
     return ret
-s
+
 def normalize_2nd_moment(x, eps=1e-8):
     return x * (x.square().mean(dim=1, keepdim=True) + eps).rsqrt()
 
@@ -87,8 +87,7 @@ class Generator(nn.Module):
         self.fc_z = nn.Linear(z_dim*9, bert_f_dim)
         self.emb_label = nn.Embedding(num_bbox_labels, bert_f_dim)
         
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        #self.tokenizer = init_tokenizer()
+        self.tokenizer = init_tokenizer()
         encoder_config = BertConfig.from_json_file(med_config)
         encoder_config.encoder_width = bert_f_dim
         encoder_config.num_hidden_layers = bert_num_encoder_layers
@@ -145,17 +144,10 @@ class Generator(nn.Module):
         z0 = normalize_2nd_moment(z.view(B, -1))
         z = self.fc_z(z0).unsqueeze(1).expand(-1, N, -1)
         l = self.emb_label(bbox_class)
-        #aspect_ratio = (bbox_real[:,:,3] / bbox_real[:,:,2]).nan_to_num().unsqueeze(-1)
-        print("bbox_text", merge_lists(bbox_text))
-        print("self.max_text_length", self.max_text_length)
-        print("bbox_class.device", bbox_class.device)
-        print("self.tokenizer", self.tokenizer)
-        
+        #aspect_ratio = (bbox_real[:,:,3] / bbox_real[:,:,2]).nan_to_num().unsqueeze(-1)  
         #text =  self.tokenizer(merge_lists(bbox_text), max_length=self.max_text_length, return_tensors="pt").to(bbox_class.device)
         
         text = self.tokenizer(merge_lists(bbox_text), padding='max_length', truncation=True, max_length=self.max_text_length, return_tensors="pt").to(bbox_class.device)
-
-        print("text", text)
 
         
         text_output = self.text_encoder(text.input_ids, attention_mask=text.attention_mask, return_dict=True, mode='text')
