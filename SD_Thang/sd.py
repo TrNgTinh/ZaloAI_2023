@@ -11,7 +11,7 @@ class BackgroundGenerator:
             torch_dtype=torch.float16,
             use_safetensors=True,
             variant="fp16",
-            cache_dir="SD_Thang/checkpoint"
+            cache_dir="cache"
         ).to(device)
 
         self.generator = torch.Generator(device=device).manual_seed(seed)
