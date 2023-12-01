@@ -15,4 +15,5 @@ Output/
 Notebook
 __pycache__
 cache
+cache/
 */__pycache__/*
