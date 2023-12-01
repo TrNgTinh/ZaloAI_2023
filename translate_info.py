@@ -112,7 +112,7 @@ class TranslatorProcessor:
         self.df_cate = create_embedding_column(self.df_cate, "loc", "loc_emb", self.phobert, self.tokenizer)
         self.index_build = build_faiss_index(self.df_cate, "loc_emb")
         
-    def categorical_row(self, row, categorical_file, out_csv_file, col_emb = 'caption'):
+    def categorical_row(self, row, categorical_file, out_csv_file, col_emb = 'caption', col_translate = 'caption'):
         #Categorical
         #Raw Df
         item = row[col_emb]
