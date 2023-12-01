@@ -6,55 +6,57 @@ import time
 
 current_path = Path(__file__).resolve().parent
 
-SD_path = current_path / 'SD'
+SD_path = current_path / 'SD_Thang'
 sys.path.append(str(SD_path))
-from SD.sd import BackgroundGenerator
+from SD_Thang.sd import BackgroundGenerator
 
-from Translate_Vi2En.vi2en import TranslatorModule
+#from Translate_Vi2En.vi2en import TranslatorModule
 
-#processor = BackgroundGenerator()
+bg = BackgroundGenerator()
 
-translator = TranslatorModule()
 
 # Load data from the CSV file
-csv_file = '/home/tinhtn/tinhtn/Banner/Zalo/Data/train/info.csv'
+csv_file = '/home/tinhtn/tinhtn/Banner/Zalo/Data/info_thuoc_en.csv'
 data = pd.read_csv(csv_file)
 
-# Iterate through rows in the DataFrame
+
+# Biến để theo dõi số lượng ảnh đã xử lý
+image_count = 0
+
+# Biến để tính tổng thời gian
+total_time = 0
+
 for index, row in data.iterrows():
+    # Kiểm tra xem đã xử lý đủ 100 ảnh chưa
+    if image_count >= 2:
+        break
+    
     start_time = time.time()
-    # Extract information from the row
-    prompt_id = row['id']
-    caption = row['caption']
-    #caption_en = translator.translate_vi2en(row['caption'])
-    output_filename = f"{prompt_id}.jpg"
-
-    #data.at[index, 'caption_en'] = caption_en[0]
-
-    # Check if description is not empty before translating
-    if not pd.isnull(row['description']) and row['description'].strip() != "":
-        description_en = translator.translate_vi2en(row['description'])
-        data.at[index, 'description_en'] = description_en[0] if description_en else ""
-
-    # Check if moreInfo is not empty before translating
-    if not pd.isnull(row['moreInfo']) and row['moreInfo'].strip() != "":
-        moreInfo_en = translator.translate_vi2en(row['moreInfo'])
-        data.at[index, 'moreInfo_en'] = moreInfo_en[0] if moreInfo_en else ""
-
-    # Check if caption is not empty before translating
-    if not pd.isnull(row['caption']) and row['caption'].strip() != "":
-        caption_en = translator.translate_vi2en(row['caption'])
-        data.at[index, 'caption_en'] = caption_en[0] if caption_en else ""
+    
+    # Các bước xử lý ảnh và dịch ngôn ngữ ở đây
+    
+    output_filename = f"{row['bannerImage']}"
 
     # Process the image using the prompt and save it
-    #prompt = caption_en
-    #processor.process_image(prompt, "ouput_bg/" + output_filename)
+    prompt = row['caption_en']
+    bg.process_image(prompt, "Output/out_bg/" + output_filename)
     
     end_time = time.time()
     elapsed_time = end_time - start_time
-
+    total_time += elapsed_time
+    
+    # Tăng biến đếm số lượng ảnh đã xử lý
+    image_count += 1
+    
     print(f"Processed {output_filename} in {elapsed_time:.2f} seconds")
 
+# Tính trung bình thời gian chạy
+average_time = total_time / image_count if image_count > 0 else 0
+print(f"Average processing time for {image_count} images: {average_time:.2f} seconds")
 
-output_csv_file = '/home/tinhtn/tinhtn/Banner/Zalo/Data/train/infor_english.csv'
-data.to_csv(output_csv_file, index=False)
+
+
+
+
+
+

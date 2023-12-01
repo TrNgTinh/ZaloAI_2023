@@ -169,9 +169,9 @@ def get_adaptive_font_button_color(img):
 
     # adaptive font color, background color
     if sum(clr) < 255 * 2:
-        return 'rgba'+str((0, 0, 0, 255)), 'rgba'+str((255, 255, 255, 255))
+        return 'rgba'+str((255, 255, 255, 255))
     else:
-        return 'rgba'+str((255, 255, 255, 255)), 'rgba'+str((0, 0, 0, 255))
+        return 'rgba'+str((0, 0, 0, 255))
 
 #----------------------------------------------------------------------------
 
@@ -218,6 +218,7 @@ def visualize_banner(boxes, masks, styles, is_center, background_img, browser, o
                 font_color = 'color:' + get_adaptive_font_color(background_img.crop([x1, y1, x2, y2])) + ';'
 
         font_size, text_width = get_adaptive_font_size2(w_tbox, h_tbox, H_page, text, styles[i]['type'])
+
 
         # button resize and alignment
         if styles[i]['type'] == 'button':
@@ -470,6 +471,7 @@ import os
 import uuid
 import numpy as np
 import re
+import seaborn as sns
 from PIL import Image, ImageDraw, ImageFont
 
 def visualize_banner(boxes, masks, styles, is_center, background_img, output_format, generated_file_path):
@@ -491,19 +493,14 @@ def visualize_banner(boxes, masks, styles, is_center, background_img, output_for
         x1, x2 = max(0, int(x1 * W_page)), min(W_page - 1, int(x2 * W_page))
         y1, y2 = max(0, int(y1 * H_page)), min(H_page - 1, int(y2 * H_page))
         h_tbox, w_tbox = int(y2 - y1 + 1), int(x2 - x1 + 1)
-        
-        font_color_raw = styles[i]['style']['color'] or get_adaptive_font_color(img_draw.crop([x1, y1, x2, y2]))
-        font_color_match = re.match(r'rgba:\((\d+), (\d+), (\d+), (\d+)\)', font_color_raw)
-        if font_color_match:
-            font_color = (int(font_color_match.group(1)), int(font_color_match.group(2)), int(font_color_match.group(3)))
-        else:
-            font_color = font_color_raw
-
-
+            
         font_size, text_width = get_adaptive_font_size2(w_tbox, h_tbox, H_page, text, styles[i]['type'])
+
 
         # button resize and alignment
         if styles[i]['type'] == 'button':
+
+    
             r_mar = 1.3
             font_size_int = int(font_size)
             mar = font_size_int / 2 * r_mar
@@ -518,12 +515,33 @@ def visualize_banner(boxes, masks, styles, is_center, background_img, output_for
                 y1 = max(0, y_mid - mar - 1)
                 y2 = min(H_page - 1, y_mid + mar)
                 x2 = min(W_page - 1, x1 + text_width + mar * 2)
-            h_tbox, w_tbox = int(y2 - y1 + 1), int(x2 - x1 + 1)
+                
+            h_tbox, w_tbox = int(y2 - y1 + 1), int(x2 - x1 + 1) 
 
-        font_size = int(font_size)
-        font = ImageFont.truetype("arial.ttf", font_size)
+            color = (255, 255, 0)  # Tuple RGB cho màu vàng
+            c_fill = color + (100,)
+            text_widths = draw.textlength(text, font)
+            draw.rectangle([x1, y1, x1 + text_widths, y1 + int(font_size) + 5], outline=color, fill=c_fill)
+            
+            
+        font = ImageFont.truetype("arial.ttf", int(font_size))
 
-        draw.text((x1, y1), text, font=font, fill=font_color)
+        if styles[i]['type'] == 'button':
+            font_color_raw = styles[i]['style']['color'] or get_adaptive_font_button_color(img_draw.crop([x1, y1, x2, y2]))
+        else:
+            font_color_raw = styles[i]['style']['color'] or get_adaptive_font_color(img_draw.crop([x1, y1, x2, y2]))
+        
+        font_color_match = re.match(r'rgba:\((\d+), (\d+), (\d+), (\d+)\)', font_color_raw)
+        if font_color_match:
+            font_color = (int(font_color_match.group(1)), int(font_color_match.group(2)), int(font_color_match.group(3)))
+        else:
+            font_color = font_color_raw
+
+        
+        if styles[i]['type'] == 'button':
+            draw.text((x1, y1), text, font=font, fill=font_color)
+        else:
+            draw.text((x1, y1), text.upper(), font=font, fill=font_color)
 
     # Save the generated image
     generated_image_path_vis = generated_file_path + '.jpg'

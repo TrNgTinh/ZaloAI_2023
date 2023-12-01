@@ -16,6 +16,7 @@ import numpy as np
 import math
 from PIL import Image, ImageDraw, ImageFilter
 import PIL
+from PIL import ImageFont
 import seaborn as sns
 import torch
 
@@ -82,9 +83,43 @@ def save_bboxes_with_background(boxes, masks, labels, background_orig, path):
         x1, x2 = x1 * W_page, x2 * W_page
         y1, y2 = y1 * H_page, y2 * H_page
         draw.rectangle([x1, y1, x2, y2], outline=color, fill=c_fill)
+
+        text = "Hiển thị nè"
+        font = ImageFont.truetype('arial.ttf', 30)
+
+        # Calculate the text box width and height
+        text_width, text_height = draw.textbbox(text = text, font=font)
+
+        # Position the text on the image
+        #draw.text((x, y), text, fill=color, font=font)
+
+        text_position = ((x1 + x2 - text_width) // 2, (y1 + y2 - text_height) // 2)
+        draw.text(text_position, text, fill='white')
+        
     background_orig_temp.save(path, format='png', compress_level=0, optimize=False)
 
 #----------------------------------------------------------------------------
+
+
+def save_bboxes_with_background(boxes, masks, labels, background_orig, path):
+    colors = sns.color_palette('husl', n_colors=13)
+    colors = [tuple(map(lambda x: int(x * 255), c)) for c in colors]
+    background_orig_temp = background_orig.copy()
+    W_page, H_page = background_orig_temp.size
+    draw = ImageDraw.Draw(background_orig_temp, 'RGBA')
+    boxes = boxes[masks]
+    labels = labels[masks]
+    area = [b[2] * b[3] for b in boxes]
+    indices = sorted(range(len(area)), key=lambda i: area[i], reverse=True)
+    for i in indices:
+        bbox, color = boxes[i], colors[labels[i]]
+        c_fill = color + (100,)
+        x1, y1, x2, y2 = convert_xywh_to_ltrb(bbox)
+        x1, x2 = x1 * W_page, x2 * W_page
+        y1, y2 = y1 * H_page, y2 * H_page
+        draw.rectangle([x1, y1, x2, y2], outline=color, fill=c_fill)
+    background_orig_temp.save(path, format='png', compress_level=0, optimize=False)
+
 
 def jitter(bbox_fake, out_jittering_strength, seed): # bbox_fake: [B, N, 4] (xc, yc, w, h)
     perturb = torch.from_numpy(np.random.RandomState(seed).uniform(low=math.log(1.0-out_jittering_strength), high=math.log(1.0+out_jittering_strength), size=bbox_fake.shape)).to(bbox_fake.device).to(torch.float32)
@@ -336,7 +371,7 @@ def generate_images(
         e['style']['fontFamily'] = 'Arial'
         if e['type'] == 'button':
             e['buttonParams']['radius'] = 0.5
-            
+    
     visualize_banner(bbox_fake, mask, banner_specs['contentStyle']['elements'],
                     bbox_alignment, background_orig, banner_specs["resultFormat"],
                     outfile)
